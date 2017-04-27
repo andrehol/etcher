@@ -1,148 +1,459 @@
 'use strict';
 
 const m = require('mochainon');
+const _ = require('lodash');
 const angular = require('angular');
 const units = require('../../../lib/shared/units');
-const settings = require('../../../lib/gui/models/settings');
+const release = require('../../../lib/shared/release');
+const packageJSON = require('../../../package.json');
 require('angular-mocks');
 
 describe('Browser: UpdateNotifier', function() {
 
   beforeEach(angular.mock.module(
-    require('../../../lib/gui/components/update-notifier/update-notifier')
+    require('../../../lib/gui/components/update-notifier')
   ));
 
   describe('UpdateNotifierService', function() {
 
+    describe('.UPDATE_NOTIFIER_SLEEP_DAYS', function() {
+
+      let UpdateNotifierService;
+
+      beforeEach(angular.mock.inject(function(_UpdateNotifierService_) {
+        UpdateNotifierService = _UpdateNotifierService_;
+      }));
+
+      it('should be an integer', function() {
+        m.chai.expect(_.isInteger(UpdateNotifierService.UPDATE_NOTIFIER_SLEEP_DAYS)).to.be.true;
+      });
+
+      it('should be greater than 0', function() {
+        m.chai.expect(UpdateNotifierService.UPDATE_NOTIFIER_SLEEP_DAYS > 0).to.be.true;
+      });
+
+    });
+
     describe('.shouldCheckForUpdates()', function() {
 
       let UpdateNotifierService;
-      let UPDATE_NOTIFIER_SLEEP_DAYS;
 
-      beforeEach(angular.mock.inject(function(_UpdateNotifierService_, _UPDATE_NOTIFIER_SLEEP_DAYS_) {
+      beforeEach(angular.mock.inject(function(_UpdateNotifierService_) {
         UpdateNotifierService = _UpdateNotifierService_;
-        UPDATE_NOTIFIER_SLEEP_DAYS = _UPDATE_NOTIFIER_SLEEP_DAYS_;
       }));
 
-      describe('given ignoreSleepUpdateCheck is false', function() {
+      const UPDATE_NOTIFIER_SLEEP_MS = units.daysToMilliseconds(packageJSON.updates.sleepDays);
 
-        beforeEach(function() {
-          this.ignoreSleepUpdateCheck = false;
-        });
+      _.each([
 
-        describe('given the `sleepUpdateCheck` is disabled', function() {
+        // Given the `lastSleptUpdateNotifier` was never updated
 
-          beforeEach(function() {
-            settings.set('sleepUpdateCheck', false);
-          });
+        {
+          options: {
+            lastSleptUpdateNotifier: undefined,
+            lastSleptUpdateNotifierVersion: undefined,
+            releaseType: release.RELEASE_TYPE.PRODUCTION
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: undefined,
+            lastSleptUpdateNotifierVersion: undefined,
+            releaseType: release.RELEASE_TYPE.SNAPSHOT
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: undefined,
+            lastSleptUpdateNotifierVersion: undefined,
+            releaseType: release.RELEASE_TYPE.UNKNOWN
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: undefined,
+            lastSleptUpdateNotifierVersion: packageJSON.version,
+            releaseType: release.RELEASE_TYPE.PRODUCTION
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: undefined,
+            lastSleptUpdateNotifierVersion: packageJSON.version,
+            releaseType: release.RELEASE_TYPE.SNAPSHOT
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: undefined,
+            lastSleptUpdateNotifierVersion: packageJSON.version,
+            releaseType: release.RELEASE_TYPE.UNKNOWN
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: undefined,
+            lastSleptUpdateNotifierVersion: '0.0.0',
+            releaseType: release.RELEASE_TYPE.PRODUCTION
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: undefined,
+            lastSleptUpdateNotifierVersion: '0.0.0',
+            releaseType: release.RELEASE_TYPE.SNAPSHOT
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: undefined,
+            lastSleptUpdateNotifierVersion: '0.0.0',
+            releaseType: release.RELEASE_TYPE.UNKNOWN
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: undefined,
+            lastSleptUpdateNotifierVersion: '99.9.9',
+            releaseType: release.RELEASE_TYPE.PRODUCTION
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: undefined,
+            lastSleptUpdateNotifierVersion: '99.9.9',
+            releaseType: release.RELEASE_TYPE.SNAPSHOT
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: undefined,
+            lastSleptUpdateNotifierVersion: '99.9.9',
+            releaseType: release.RELEASE_TYPE.UNKNOWN
+          },
+          expected: true
+        },
 
-          it('should return true', function() {
-            const result = UpdateNotifierService.shouldCheckForUpdates({
-              ignoreSleepUpdateCheck: this.ignoreSleepUpdateCheck
-            });
+        // Given the `lastSleptUpdateNotifier` was very recently updated
 
-            m.chai.expect(result).to.be.true;
-          });
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() - 1000,
+            lastSleptUpdateNotifierVersion: packageJSON.version,
+            releaseType: release.RELEASE_TYPE.PRODUCTION
+          },
+          expected: false
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() - 1000,
+            lastSleptUpdateNotifierVersion: packageJSON.version,
+            releaseType: release.RELEASE_TYPE.SNAPSHOT
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() - 1000,
+            lastSleptUpdateNotifierVersion: packageJSON.version,
+            releaseType: release.RELEASE_TYPE.UNKNOWN
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() - 1000,
+            lastSleptUpdateNotifierVersion: '0.0.0',
+            releaseType: release.RELEASE_TYPE.PRODUCTION
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() - 1000,
+            lastSleptUpdateNotifierVersion: '0.0.0',
+            releaseType: release.RELEASE_TYPE.SNAPSHOT
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() - 1000,
+            lastSleptUpdateNotifierVersion: '0.0.0',
+            releaseType: release.RELEASE_TYPE.UNKNOWN
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() - 1000,
+            lastSleptUpdateNotifierVersion: '99.9.9',
+            releaseType: release.RELEASE_TYPE.PRODUCTION
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() - 1000,
+            lastSleptUpdateNotifierVersion: '99.9.9',
+            releaseType: release.RELEASE_TYPE.SNAPSHOT
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() - 1000,
+            lastSleptUpdateNotifierVersion: '99.9.9',
+            releaseType: release.RELEASE_TYPE.UNKNOWN
+          },
+          expected: true
+        },
 
-        });
+        // Given the `lastSleptUpdateNotifier` was updated in the future
 
-        describe('given the `sleepUpdateCheck` is enabled', function() {
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() + 1000,
+            lastSleptUpdateNotifierVersion: packageJSON.version,
+            releaseType: release.RELEASE_TYPE.PRODUCTION
+          },
+          expected: false
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() + 1000,
+            lastSleptUpdateNotifierVersion: packageJSON.version,
+            releaseType: release.RELEASE_TYPE.SNAPSHOT
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() + 1000,
+            lastSleptUpdateNotifierVersion: packageJSON.version,
+            releaseType: release.RELEASE_TYPE.UNKNOWN
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() + 1000,
+            lastSleptUpdateNotifierVersion: '0.0.0',
+            releaseType: release.RELEASE_TYPE.PRODUCTION
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() + 1000,
+            lastSleptUpdateNotifierVersion: '0.0.0',
+            releaseType: release.RELEASE_TYPE.SNAPSHOT
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() + 1000,
+            lastSleptUpdateNotifierVersion: '0.0.0',
+            releaseType: release.RELEASE_TYPE.UNKNOWN
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() + 1000,
+            lastSleptUpdateNotifierVersion: '99.9.9',
+            releaseType: release.RELEASE_TYPE.PRODUCTION
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() + 1000,
+            lastSleptUpdateNotifierVersion: '99.9.9',
+            releaseType: release.RELEASE_TYPE.SNAPSHOT
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() + 1000,
+            lastSleptUpdateNotifierVersion: '99.9.9',
+            releaseType: release.RELEASE_TYPE.UNKNOWN
+          },
+          expected: true
+        },
 
-          beforeEach(function() {
-            settings.set('sleepUpdateCheck', true);
-          });
+        // Given the `lastSleptUpdateNotifier` was updated far in the future
 
-          describe('given the `lastUpdateNotify` was never updated', function() {
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() + UPDATE_NOTIFIER_SLEEP_MS + 1000,
+            lastSleptUpdateNotifierVersion: packageJSON.version,
+            releaseType: release.RELEASE_TYPE.PRODUCTION
+          },
+          expected: false
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() + UPDATE_NOTIFIER_SLEEP_MS + 1000,
+            lastSleptUpdateNotifierVersion: packageJSON.version,
+            releaseType: release.RELEASE_TYPE.SNAPSHOT
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() + UPDATE_NOTIFIER_SLEEP_MS + 1000,
+            lastSleptUpdateNotifierVersion: packageJSON.version,
+            releaseType: release.RELEASE_TYPE.UNKNOWN
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() + UPDATE_NOTIFIER_SLEEP_MS + 1000,
+            lastSleptUpdateNotifierVersion: '0.0.0',
+            releaseType: release.RELEASE_TYPE.PRODUCTION
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() + UPDATE_NOTIFIER_SLEEP_MS + 1000,
+            lastSleptUpdateNotifierVersion: '0.0.0',
+            releaseType: release.RELEASE_TYPE.SNAPSHOT
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() + UPDATE_NOTIFIER_SLEEP_MS + 1000,
+            lastSleptUpdateNotifierVersion: '0.0.0',
+            releaseType: release.RELEASE_TYPE.UNKNOWN
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() + UPDATE_NOTIFIER_SLEEP_MS + 1000,
+            lastSleptUpdateNotifierVersion: '99.9.9',
+            releaseType: release.RELEASE_TYPE.PRODUCTION
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() + UPDATE_NOTIFIER_SLEEP_MS + 1000,
+            lastSleptUpdateNotifierVersion: '99.9.9',
+            releaseType: release.RELEASE_TYPE.SNAPSHOT
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() + UPDATE_NOTIFIER_SLEEP_MS + 1000,
+            lastSleptUpdateNotifierVersion: '99.9.9',
+            releaseType: release.RELEASE_TYPE.UNKNOWN
+          },
+          expected: true
+        },
 
-            beforeEach(function() {
-              settings.set('lastUpdateNotify', undefined);
-            });
+        // Given the `lastSleptUpdateNotifier` was updated long ago
 
-            it('should return true', function() {
-              const result = UpdateNotifierService.shouldCheckForUpdates({
-                ignoreSleepUpdateCheck: this.ignoreSleepUpdateCheck
-              });
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() - UPDATE_NOTIFIER_SLEEP_MS - 1000,
+            lastSleptUpdateNotifierVersion: packageJSON.version,
+            releaseType: release.RELEASE_TYPE.PRODUCTION
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() - UPDATE_NOTIFIER_SLEEP_MS - 1000,
+            lastSleptUpdateNotifierVersion: packageJSON.version,
+            releaseType: release.RELEASE_TYPE.SNAPSHOT
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() - UPDATE_NOTIFIER_SLEEP_MS - 1000,
+            lastSleptUpdateNotifierVersion: packageJSON.version,
+            releaseType: release.RELEASE_TYPE.UNKNOWN
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() - UPDATE_NOTIFIER_SLEEP_MS - 1000,
+            lastSleptUpdateNotifierVersion: '0.0.0',
+            releaseType: release.RELEASE_TYPE.PRODUCTION
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() - UPDATE_NOTIFIER_SLEEP_MS - 1000,
+            lastSleptUpdateNotifierVersion: '0.0.0',
+            releaseType: release.RELEASE_TYPE.SNAPSHOT
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() - UPDATE_NOTIFIER_SLEEP_MS - 1000,
+            lastSleptUpdateNotifierVersion: '0.0.0',
+            releaseType: release.RELEASE_TYPE.UNKNOWN
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() - UPDATE_NOTIFIER_SLEEP_MS - 1000,
+            lastSleptUpdateNotifierVersion: '99.9.9',
+            releaseType: release.RELEASE_TYPE.PRODUCTION
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() - UPDATE_NOTIFIER_SLEEP_MS - 1000,
+            lastSleptUpdateNotifierVersion: '99.9.9',
+            releaseType: release.RELEASE_TYPE.SNAPSHOT
+          },
+          expected: true
+        },
+        {
+          options: {
+            lastSleptUpdateNotifier: Date.now() - UPDATE_NOTIFIER_SLEEP_MS - 1000,
+            lastSleptUpdateNotifierVersion: '99.9.9',
+            releaseType: release.RELEASE_TYPE.UNKNOWN
+          },
+          expected: true
+        }
 
-              m.chai.expect(result).to.be.true;
-            });
+      ], (testCase) => {
 
-          });
-
-          describe('given the `lastUpdateNotify` was very recently updated', function() {
-
-            beforeEach(function() {
-              settings.set('lastUpdateNotify', Date.now() + 1000);
-            });
-
-            it('should return false', function() {
-              const result = UpdateNotifierService.shouldCheckForUpdates({
-                ignoreSleepUpdateCheck: this.ignoreSleepUpdateCheck
-              });
-
-              m.chai.expect(result).to.be.false;
-            });
-
-          });
-
-          describe('given the `lastUpdateNotify` was updated long ago', function() {
-
-            beforeEach(function() {
-              const SLEEP_MS = units.daysToMilliseconds(UPDATE_NOTIFIER_SLEEP_DAYS);
-              settings.set('lastUpdateNotify', Date.now() + SLEEP_MS + 1000);
-            });
-
-            it('should return true', function() {
-              const result = UpdateNotifierService.shouldCheckForUpdates({
-                ignoreSleepUpdateCheck: this.ignoreSleepUpdateCheck
-              });
-
-              m.chai.expect(result).to.be.true;
-            });
-
-            it('should unset the `sleepUpdateCheck` setting', function() {
-              m.chai.expect(settings.get('sleepUpdateCheck')).to.be.true;
-
-              UpdateNotifierService.shouldCheckForUpdates({
-                ignoreSleepUpdateCheck: this.ignoreSleepUpdateCheck
-              });
-
-              m.chai.expect(settings.get('sleepUpdateCheck')).to.be.false;
-            });
-
-          });
-
-        });
-
-      });
-
-      describe('given ignoreSleepUpdateCheck is true', function() {
-
-        beforeEach(function() {
-          this.ignoreSleepUpdateCheck = true;
-        });
-
-        describe('given the `sleepUpdateCheck` is enabled', function() {
-
-          beforeEach(function() {
-            settings.set('sleepUpdateCheck', true);
-          });
-
-          describe('given the `lastUpdateNotify` was very recently updated', function() {
-
-            beforeEach(function() {
-              settings.set('lastUpdateNotify', Date.now() + 1000);
-            });
-
-            it('should return true', function() {
-              const result = UpdateNotifierService.shouldCheckForUpdates({
-                ignoreSleepUpdateCheck: this.ignoreSleepUpdateCheck
-              });
-
-              m.chai.expect(result).to.be.true;
-            });
-
-          });
-
+        it(_.join([
+          `should return ${testCase.expected} if`,
+          `lastSleptUpdateNotifier=${testCase.options.lastSleptUpdateNotifier},`,
+          `lastSleptUpdateNotifierVersion=${testCase.options.lastSleptUpdateNotifierVersion}, and`,
+          `releaseType=${testCase.options.releaseType}`
+        ], ' '), function() {
+          m.chai.expect(UpdateNotifierService.shouldCheckForUpdates(testCase.options)).to.equal(testCase.expected);
         });
 
       });
